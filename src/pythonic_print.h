@@ -1,3 +1,6 @@
+// pythonic_print.h
+// copyright 2013 James P. Jonsson
+
 #ifndef PYTHONIC_PRINT_H
 #define PYTHONIC_PRINT_H
 
