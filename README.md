@@ -10,7 +10,7 @@ supports iterators is used, it will be printed out in initializer list syntax.
 Tuples and pairs will be printed out in Python tuple syntax.
 
 Run make in this directory to produce a small test program that show's off some
-off pp::print's capabilities.
+off pp::print's capabilities. The program will be called pptest.
 
 gcc is required to compile pythonic_print. It should work with versions 4.6 and
 higher.
