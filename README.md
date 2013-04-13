@@ -1,8 +1,8 @@
 pythonic-printer
 ================
 
-pythonic_printer.h provides a python-inspired print function (pp::print). I 
-wrote this function mostly to learn some C++11 features.
+pythonic_printer.h provides a python-inspired print function (pp::print). This 
+project is primarily for the purpose of exploring C++11 features.
 
 Call pp::print<...>(...) on any number of objects of any types. It will print
 them to std::cout in a manner similar to Python's print function. If a type that
