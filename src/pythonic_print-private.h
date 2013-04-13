@@ -203,9 +203,16 @@ namespace pp
   // highest-level external functions
   //
 
-  // base case
-  void print(ostream& stream)
+  // zero-argument base cases
+  // defined in cpp
+  void print();
+  void print(ostream& stream);
+
+  // single-argument base case to be called by the general case
+  template<typename T>
+  void print(ostream& stream, const T& first)
   {
+    PrintHelper<T>::print_object(stream, first);
     stream << endl;
   }
 
