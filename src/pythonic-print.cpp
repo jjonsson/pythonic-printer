@@ -1,4 +1,4 @@
-#include "pythonic_print.h"
+#include "pythonic-print.h"
 #include <iostream>
 
 namespace pp {
@@ -7,7 +7,7 @@ namespace pp {
   // base cases of print
   void print(ostream& stream)
   {
-    stream << endl;
+    stream << sendl;
   }
 
   void print()

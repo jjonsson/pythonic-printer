@@ -62,7 +62,7 @@ namespace pp
 
     static void print_simple(ostream&, const T&);
     static void print_array(ostream&, const T&);
-    static void print_container(ostream&, const T&);
+    static void print_container(ostream&, const T&)
     static void print_other(ostream&, const T&);
 
   public:
@@ -107,12 +107,12 @@ namespace pp
   {
   private:
 
-    static void print_pair(ostream&, const pair<T1, T2>&);
+    static void print_pair(ostream&, const T&);
 
   public:
-    static void print_object(ostream& stream, const pair<T1, T2>& object)
+    static void print_object(ostream& stream, const pair<T1, T2>& t)
     {
-      PrintHelper<pair<T1, T2>>::print_pair(stream, object);
+      PrintHelper<T>::print_pair(stream, object);
     }
   };
 
@@ -122,12 +122,12 @@ namespace pp
   {
   private:
 
-    static void print_tuple(ostream&, const tuple<Ts...>&);
+    static void print_tuple(ostream&, const T&);
 
   public:
-    static void print_object(ostream& stream, const tuple<Ts...>& object)
+    static void print_object(ostream& stream, const tuple<Ts...>& t)
     {
-      PrintHelper<tuple<Ts...>>::print_tuple(stream, object);
+      PrintHelper<T>::print_tuple(stream, object);
     }
   };
 
@@ -204,30 +204,28 @@ namespace pp
   }
 
   // printing a pair is pretty easy
-  template<typename T1, typename T2>
-  void PrintHelper<pair<T1, T2>>::print_pair(ostream& stream,
-                                         const pair<T1, T2>& object)
+  template<typename T>
+  void PrintHelper<T>::print_pair(ostream& stream, const T& object)
   {
     stream << "(";
-    PrintHelper<T1>::print_object(get<0>(object));
+    PrintHelper<T1>::print_object(get<0>(t));
     stream << ", ";
-    PrintHelper<T2>::print_object(get<1>(object));
+    PrintHelper<T2>::print_object(get<1>(t));
     stream << ")";
   }
 
   // print element 0 then call tuple_helper on the rest of the tuple
   // this is to print the correct number of commas
-  template<typename... Ts>
-  void PrintHelper<tuple<Ts...>>::print_tuple(ostream& stream,
-                                       const tuple<Ts...>& object)
+  template<typename T>
+  void PrintHelper<T>::print_tuple(ostream& stream, const T& object)
   {
     stream << "(";
     // if the tuple is empty, just print parens
     if (tuple_size<tuple<Ts...>>::value > 0) {
       PrintHelper<typename tuple_element<0, tuple<Ts...>>::type>::
-        print(get<0>(object));
+        print(get<0>(t));
     }
-    tuple_helper<tuple<Ts...>, 1>(object);
+    tuple_helper<tuple<Ts...>, 1>(t);
     stream << ")";
   }
 
