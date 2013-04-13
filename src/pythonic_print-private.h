@@ -34,7 +34,7 @@ namespace pp
   // if the type has the stream insert operator, <<, we can use it to print
   template<typename T>
   static constexpr auto has_stream_insert(int x) ->
-    decltype(stream << declval<T>(), bool())
+    decltype(cout << declval<T>(), bool())
   {
     return true;
   }
