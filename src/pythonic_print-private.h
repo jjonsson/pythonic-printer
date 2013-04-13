@@ -185,7 +185,7 @@ namespace pp
     // if the tuple is empty, just print parens
     if (tuple_size<tuple<Ts...>>::value > 0) {
       PrintHelper<typename tuple_element<0, tuple<Ts...>>::type>::
-        print(get<0>(t));
+        print_object(get<0>(t));
     }
     print_tuple<tuple<Ts...>, 1>(t);
     stream << ")";
