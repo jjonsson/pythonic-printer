@@ -5,6 +5,7 @@
 #include <type_traits>
 #include <utility>
 #include <tuple>
+#include <typeinfo>
 
 using namespace std;
 
@@ -53,7 +54,7 @@ namespace pp
   public:
     // a helper function that is mutually recursive with print_helper and
     //   print_tuple
-    static void print(T);
+    static void print(const T&);
   };
 
   // specialization for pairs
@@ -61,7 +62,7 @@ namespace pp
   class PrintHelper<pair<T1, T2>>
   {
   public:
-    static void print(pair<T1, T2> t);
+    static void print(const pair<T1, T2>&);
   };
 
   // specialization for tuples
@@ -69,42 +70,44 @@ namespace pp
   class PrintHelper<tuple<Ts...>>
   {
   public:
-    static void print(tuple<Ts...> t);
+    static void print(const tuple<Ts...>&);
   };
 
   // if operator<<(ostream, T) is defined, just use that
+  // however, if T is an array, we don't want to just print the address, so
+  //   use a different definition for arrays
+  // if the array is a C-style string, we do want to use the << operator
   template<typename T>
-  static auto print_helper(T first) ->
+  static auto print_helper(const T& object) ->
     typename enable_if<has_stream_insert<T>(0)
-                    && (!is_array<T>::value)>::type
+                    && (!is_array<T>::value
+                    ||  is_convertible<T, string>::value)>::type
   {
-    cout << first;
+    cout << object;
   }
 
   // T is an array
   template<typename T>
-  static auto print_helper(T object) ->
-    typename enable_if<is_array<T>::value>::type
+  static auto print_helper(const T& object) ->
+    typename enable_if<is_array<T>::value
+                    && (!is_convertible<T, string>::value)>::type
   {
-    cerr << "got to array printer" << endl;
     // just in case a null pointer gets passed in, though I doubt a null pointer
     //   can ever be passed into this function because of the enable_if
     if (object == NULL) cout << "{}";
 
-    int length = sizeof(object) / sizeof(object[0]);
-
     cout << "{";
-    PrintHelper<typename T::value_type>::print(object[0]);
-    for (int i = 1; i < length; ++i) {
+    PrintHelper<decltype(object[0])>::print(object[0]);
+    for (int i = 1; i < extent<T>::value; ++i) {
       cout << ", ";
-      PrintHelper<typename T::value_type>::print(object[i]);
+      PrintHelper<decltype(object[0])>::print(object[i]);
     }
     cout << "}";
   }
 
   // fallback case for when there is not a simple way to print the given type
   template<typename T>
-  static auto print_helper(T first) ->
+  static auto print_helper(const T& object) ->
     typename enable_if<(!has_stream_insert<T>(0))
                     && (!has_begin_and_end<T>(0))>::type
   {
@@ -113,16 +116,16 @@ namespace pp
 
   // if the given type has iterators, print it using initializer list syntax
   template<typename T>
-  static auto print_helper(T first) ->
+  static auto print_helper(const T& object) ->
     typename enable_if<(has_begin_and_end<T>(0))
                     && (!has_stream_insert<T>(0))>::type
   {
-    auto it = first.begin();
+    auto it = object.begin();
     cout << "{";
-    if (it != first.end()) {
+    if (it != object.end()) {
       PrintHelper<typename T::value_type>::print(*it);
     }
-    for (++it; it != first.end(); ++it) {
+    for (++it; it != object.end(); ++it) {
       cout << ", ";
       PrintHelper<typename T::value_type>::print(*it);
     }
@@ -132,7 +135,7 @@ namespace pp
   // when called on a type that is not a pair or tuple, we can let print_helper
   //   do all the work
   template<typename T>
-  void PrintHelper<T>::print(T t)
+  void PrintHelper<T>::print(const T& t)
   {
     print_helper<T>(t);
   }
@@ -140,14 +143,14 @@ namespace pp
   // base case when the index of the element we are printing is outside the
   //   range of printable elements
   template<typename T, int I>
-  static auto print_tuple(T t) ->
+  static auto print_tuple(const T& t) ->
     typename enable_if<I >= tuple_size<T>::value>::type {}
 
   // prints element I of a tuple of type T
   // element 0 should be printed with PrintHelper::print before this function
   //   is called on element 1
   template<typename T, int I>
-  static auto print_tuple(T t) ->
+  static auto print_tuple(const T& t) ->
     typename enable_if<I < tuple_size<T>::value>::type
   {
     cout << ", ";
@@ -157,7 +160,7 @@ namespace pp
 
   // printing a pair is pretty easy
   template<typename T1, typename T2>
-  void PrintHelper<pair<T1, T2>>::print(pair<T1, T2> t)
+  void PrintHelper<pair<T1, T2>>::print(const pair<T1, T2>& t)
   {
     cout << "(";
     PrintHelper<T1>::print(get<0>(t));
@@ -169,7 +172,7 @@ namespace pp
   // print element 0 then call print_tuple on the rest of the tuple
   // this is to print the correct number of commas
   template<typename... Ts>
-  void PrintHelper<tuple<Ts...>>::print(tuple<Ts...> t)
+  void PrintHelper<tuple<Ts...>>::print(const tuple<Ts...>& t)
   {
     cout << "(";
     // if the tuple is empty, just print parens
@@ -181,9 +184,14 @@ namespace pp
     cout << ")";
   }
 
-  // base case
+  // base cases
+  void print()
+  {
+    cout << endl;
+  }
+
   template<typename T>
-  void print(T first)
+  void print(const T& first)
   {
     PrintHelper<T>::print(first);
     cout << endl;
@@ -191,7 +199,7 @@ namespace pp
 
   // accepts any number/combination of arguments and types of arguments
   template<typename T, typename... Ts>
-  void print(T first, Ts... rest)
+  void print(const T& first, const Ts&... rest)
   {
     PrintHelper<T>::print(first);
     cout << " ";

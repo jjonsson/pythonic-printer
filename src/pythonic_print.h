@@ -3,7 +3,7 @@
 
 namespace pp {
   template<typename... Ts>
-  void print(Ts...);
+  void print(const Ts&...);
 }
 
 #include "pythonic_print-private.h"
