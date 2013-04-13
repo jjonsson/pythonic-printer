@@ -12,5 +12,5 @@ Tuples and pairs will be printed out in Python tuple syntax.
 Run make in this directory to produce a small test program that show's off some
 off pp::print's capabilities. The program will be called pptest.
 
-gcc is required to compile pythonic_print. It should work with versions 4.6 and
-higher.
+gcc is required to compile pythonic_print. pythonic_print should compile with version
+4.6.3 of gcc and higher, though versions lower than that may not work.
