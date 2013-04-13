@@ -52,7 +52,9 @@ namespace pp
   //
 
   // Note: The lack of partial template specialization for functions in C++
-  //   means that a class is needed instead of just functions.
+  //   means that a class is needed instead of just functions. Also,
+  //   print_helper cannot be inside the class because SFINAE only works with
+  //   normal functions and not member functions.
 
   // does all the heavy lifting for print
   template<typename T>
