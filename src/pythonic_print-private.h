@@ -7,14 +7,14 @@
 #include <tuple>
 #include <typeinfo>
 
-using namespace std;
 
 namespace pp
 {
+  using namespace std;
+
   //
   // static highest-level functions
   //
-
   // uses SFINAE to determine if the type supports iterators
   template<typename T>
   static constexpr auto has_begin_and_end(int x) ->
@@ -58,25 +58,77 @@ namespace pp
   template<typename T>
   class PrintHelper
   {
+  private:
+
+    static void print_simple(ostream&, const T&);
+    static void print_array(ostream&, const T&);
+    static void print_container(ostream&, const T&)
+    static void print_other(ostream&, const T&);
+
   public:
-    // print a single object to the stream
-    static void print_object(ostream&, const T&);
+
+    // print a type that has the stream insert (<<) operator
+    auto print_object(ostream& stream, const T& object) ->
+      typename enable_if<has_stream_insert<T>(0)
+                      && (!is_array<T>::value
+                      ||  is_convertible<T, string>::value)>::type
+    {
+      PrintHelper<T>::print_simple(stream, object);
+    }
+
+    // print an array declared with the bracket operator
+    auto print_object(ostream& stream, const T& object) ->
+      typename enable_if<is_array<T>::value
+                      && (!is_convertible<T, string>::value)>::type
+    {
+      PrintHelper<T>::print_array(stream, object);
+    }
+
+    // print an object that has iterators
+    auto print_object(ostream& stream, const T& object) ->
+      typename enable_if<(has_begin_and_end<T>(0))
+                      && (!has_stream_insert<T>(0))>::type
+    {
+      PrintHelper<T>::print_container(stream, object);
+    }
+
+    // for when no reasonable printing strategies are available
+    auto print_object(ostream& stream, const T& object) ->
+      typename enable_if<(!has_stream_insert<T>(0))
+                      && (!has_begin_and_end<T>(0))>::type
+    {
+      PrintHelper<T>::print_other(stream, object);
+    }
   };
 
   // specialization for pairs
   template<typename T1, typename T2>
   class PrintHelper<pair<T1, T2>>
   {
+  private:
+
+    static void print_pair(ostream&, const T&);
+
   public:
-    static void print_object(ostream&, const pair<T1, T2>&);
+    static void print_object(ostream& stream, const pair<T1, T2>& t)
+    {
+      PrintHelper<T>::print_pair(stream, object);
+    }
   };
 
   // specialization for tuples
   template<typename... Ts>
   class PrintHelper<tuple<Ts...>>
   {
+  private:
+
+    static void print_tuple(ostream&, const T&);
+
   public:
-    static void print_object(ostream&, const tuple<Ts...>&);
+    static void print_object(ostream& stream, const tuple<Ts...>& t)
+    {
+      PrintHelper<T>::print_tuple(stream, object);
+    }
   };
 
 
@@ -87,24 +139,18 @@ namespace pp
   // if operator<<(ostream, T) is defined, just use that
   // however, if T is an array, we don't want to just print the address, so
   //   use a different definition for arrays
-  // if the array is a C-style string, we do want to use the << operator
+  // if the array is a C-style string, we do want to use the << operator  
   template<typename T>
-  auto PrintHelper<T>::print_object(ostream& stream, const T& object) ->
-    typename enable_if<has_stream_insert<T>(0)
-                    && (!is_array<T>::value
-                    ||  is_convertible<T, string>::value)>::type
+  void PrintHelper<T>::print_simple(ostream& stream, const T& object)
   {
     stream << object;
   }
 
-  // T is an array
+  // print arrays with sizes that are known at compile-time
   template<typename T>
-  auto PrintHelper<T>::print_object(ostream& stream, const T& object) ->
-    typename enable_if<is_array<T>::value
-                    && (!is_convertible<T, string>::value)>::type
+  void PrintHelper<T>::print_array(ostream& stream, const T& object)
   {
-    // just in case a null pointer gets passed in, though I doubt a null
-    //   pointer can ever be passed into this function because of the enable_if
+    // just in case a null pointer gets passed in
     if (object == NULL) stream << "{}";
 
     stream << "{";
@@ -116,20 +162,9 @@ namespace pp
     stream << "}";
   }
 
-  // fallback case for when there is not a simple way to print the given type
+  // if the given type has iterators, print it using initializer list syntax  
   template<typename T>
-  auto PrintHelper<T>::print_object(ostream& stream, const T& object) ->
-    typename enable_if<(!has_stream_insert<T>(0))
-                    && (!has_begin_and_end<T>(0))>::type
-  {
-    stream << "[[X]]";
-  }
-
-  // if the given type has iterators, print it using initializer list syntax
-  template<typename T>
-  auto PrintHelper<T>::print_object(ostream& stream, const T& object) ->
-    typename enable_if<(has_begin_and_end<T>(0))
-                    && (!has_stream_insert<T>(0))>::type
+  void PrintHelper<T>::print_container(ostream& stream, const T& object)
   {
     auto it = object.begin();
     stream << "{";
@@ -143,28 +178,34 @@ namespace pp
     stream << "}";
   }
 
+  // fallback case for when there is not a simple way to print the given type  
+  template<typename T>
+  void PrintHelper<T>::print_other(ostream& stream, const T& object)
+  {
+    stream << "[[X]]";
+  }
+
   // base case when the index of the element we are printing is outside the
   //   range of printable elements
   template<typename T, int I>
-  static auto print_tuple(ostream& stream, const T& t) ->
+  static auto tuple_helper(ostream& stream, const T& t) ->
     typename enable_if<I >= tuple_size<T>::value>::type {}
 
   // prints element I of a tuple of type T
   // element 0 should be printed with PrintHelper::print before this function
   //   is called on element 1
   template<typename T, int I>
-  static auto print_tuple(ostream& stream, const T& t) ->
+  static auto tuple_helper(ostream& stream, const T& t) ->
     typename enable_if<I < tuple_size<T>::value>::type
   {
     stream << ", ";
     PrintHelper<typename tuple_element<I, T>::type>::print_object(get<I>(t));
-    print_tuple<T, I + 1>(t);
+    tuple_helper<T, I + 1>(t);
   }
 
   // printing a pair is pretty easy
-  template<typename T1, typename T2>
-  void PrintHelper<pair<T1, T2>>::print_object(ostream& stream,
-                                               const pair<T1, T2>& t)
+  template<typename T>
+  void PrintHelper<T>::print_pair(ostream& stream, const T& object)
   {
     stream << "(";
     PrintHelper<T1>::print_object(get<0>(t));
@@ -173,11 +214,10 @@ namespace pp
     stream << ")";
   }
 
-  // print element 0 then call print_tuple on the rest of the tuple
+  // print element 0 then call tuple_helper on the rest of the tuple
   // this is to print the correct number of commas
-  template<typename... Ts>
-  void PrintHelper<tuple<Ts...>>::print_object(ostream& stream,
-                                               const tuple<Ts...>& t)
+  template<typename T>
+  void PrintHelper<T>::print_tuple(ostream& stream, const T& object)
   {
     stream << "(";
     // if the tuple is empty, just print parens
@@ -185,7 +225,7 @@ namespace pp
       PrintHelper<typename tuple_element<0, tuple<Ts...>>::type>::
         print(get<0>(t));
     }
-    print_tuple<tuple<Ts...>, 1>(t);
+    tuple_helper<tuple<Ts...>, 1>(t);
     stream << ")";
   }
 
@@ -193,12 +233,6 @@ namespace pp
   //
   // highest-level external functions
   //
-
-  // base case
-  void print(ostream& stream)
-  {
-    stream << endl;
-  }
 
   // change the stream we print to
   template<typename T, typename... Ts>
