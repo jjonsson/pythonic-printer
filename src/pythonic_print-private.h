@@ -176,7 +176,7 @@ namespace pp
                                                const pair<T1, T2>& t)
   {
     stream << "(";
-    print_object_helper<T1>(get<0>(t));
+    PrintHelper<T1>::print_object(stream, get<0>(t));
     stream << ", ";
     PrintHelper<T2>::print_object(stream, get<1>(t));
     stream << ")";
