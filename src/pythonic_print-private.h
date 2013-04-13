@@ -54,20 +54,20 @@ namespace pp
   // Note: The lack of partial template specialization for functions in C++
   //   means that a class is needed instead of just functions.
 
-  // PrintHelper does all the heavy lifting for print
-
-  // T has a stream insert operator, operator<<(ostream&, T), defined
+  // does all the heavy lifting for print
   template<typename T>
   class PrintHelper
   {
   private:
 
     static void print_simple(ostream&, const T&);
+    static void print_array(ostream&, const T&);
+    static void print_container(ostream&, const T&);
+    static void print_other(ostream&, const T&);
 
   public:
 
-    // print the given object to the given stream by calling its stream insert
-    //   operator
+    // print a type that has the stream insert (<<) operator
     auto print_object(ostream& stream, const T& object) ->
       typename enable_if<has_stream_insert<T>(0)
                       && (!is_array<T>::value
@@ -75,69 +75,33 @@ namespace pp
     {
       PrintHelper<T>::print_simple(stream, object);
     }
-  };
 
-  // T is an array that was created with the square bracket operator. This is
-  //   necessary so that the compiler knows that T is an array and not just a
-  //   pointer.
-  template<typename T>
-  class PrintHelper
-  {
-  private:
-
-    static void print_array(ostream&, const T&);
-
-  public:
-
-    // print the given object to the given stream in initializer list syntax
+    // print an array declared with the bracket operator
     auto print_object(ostream& stream, const T& object) ->
       typename enable_if<is_array<T>::value
                       && (!is_convertible<T, string>::value)>::type
     {
       PrintHelper<T>::print_array(stream, object);
     }
-  };
 
-  // T has iterators (specifically begin and end).
-  template<typename T>
-  class PrintHelper
-  {
-  private:
-
-    static void print_container(ostream&, const T&);
-
-  public:
-
-    // print the given object to the given stream in initializer list syntax
+    // print an object that has iterators
     auto print_object(ostream& stream, const T& object) ->
       typename enable_if<(has_begin_and_end<T>(0))
                       && (!has_stream_insert<T>(0))>::type
     {
       PrintHelper<T>::print_container(stream, object);
     }
-  };
 
-  // There is no reasonable strategy to print T. Just print an arbitrary
-  //   and easy to notice string.
-  template<typename T>
-  class PrintHelper
-  {
-  private:
-
-    static void print_other(ostream&, const T&);
-
-  public:
-
-    // print the string "[[X]]" to the given stream
+    // for when no reasonable printing strategies are available
     auto print_object(ostream& stream, const T& object) ->
       typename enable_if<(!has_stream_insert<T>(0))
                       && (!has_begin_and_end<T>(0))>::type
     {
-      PrintHelper<T>::print_other(stream);
+      PrintHelper<T>::print_other(stream, object);
     }
   };
 
-  // T is a pair.
+  // specialization for pairs
   template<typename T1, typename T2>
   class PrintHelper<pair<T1, T2>>
   {
@@ -152,7 +116,7 @@ namespace pp
     }
   };
 
-  // T is a tuple.
+  // specialization for tuples
   template<typename... Ts>
   class PrintHelper<tuple<Ts...>>
   {
@@ -216,7 +180,7 @@ namespace pp
 
   // fallback case for when there is not a simple way to print the given type  
   template<typename T>
-  void PrintHelper<T>::print_other(ostream& stream)
+  void PrintHelper<T>::print_other(ostream& stream, const T& object)
   {
     stream << "[[X]]";
   }
