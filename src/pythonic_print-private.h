@@ -160,7 +160,7 @@ namespace pp
   {
     stream << ", ";
     PrintHelper<typename tuple_element<I, T>::type>::print_object(stream, get<I>(t));
-    print_tuple<T, I + 1>(t);
+    print_tuple<T, I + 1>(stream, t);
   }
 
   // print an object that is neither a pair nor a tuple
@@ -194,7 +194,7 @@ namespace pp
       PrintHelper<typename tuple_element<0, tuple<Ts...>>::type>::
         print_object(stream, get<0>(t));
     }
-    print_tuple<tuple<Ts...>, 1>(t);
+    print_tuple<tuple<Ts...>, 1>(stream, t);
     stream << ")";
   }
 
