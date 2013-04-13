@@ -14,14 +14,13 @@ namespace pp
   // The lack of partial template specialization for functions in C++ means
   //   that a class is needed instead of just functions.
 
-  // a class with the sole purpose of containing PrintHelper<T>::print_object(T)
+  // does all the heavy lifting for print
   template<typename T>
   class PrintHelper
   {
   public:
-    // a helper function that is mutually recursive with print_helper and
-    //   print_tuple
-    void print_object(const T&);
+    // print a single object to the stream
+    static void print_object(const T&);
   };
 
   // specialization for pairs
@@ -29,7 +28,7 @@ namespace pp
   class PrintHelper<pair<T1, T2>>
   {
   public:
-    void print_object(const pair<T1, T2>&);
+    static void print_object(const pair<T1, T2>&);
   };
 
   // specialization for tuples
@@ -37,7 +36,7 @@ namespace pp
   class PrintHelper<tuple<Ts...>>
   {
   public:
-    void print_object(const tuple<Ts...>&);
+    static void print_object(const tuple<Ts...>&);
   };
 
   // uses SFINAE to determine if the type supports iterators
