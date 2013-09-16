@@ -13,5 +13,5 @@ be printed like types that support iterators.
 Run make in this directory to produce a small test program that show's off some
 off pp::print's capabilities. The program will be called pptest.
 
-gcc is required to compile pythonic_print. pythonic_print should compile with version
-4.6.3 of gcc and higher; versions lower than that may not work.
+gcc is required to compile pythonic_print. pythonic_print was developed to target
+gcc 4.6.3 and may not work with any other version.
